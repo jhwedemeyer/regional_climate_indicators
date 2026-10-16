@@ -1,0 +1,24 @@
+#!/bin/bash 
+#SBATCH --qos=medium
+#SBATCH --account=compacts
+#SBATCH --nodes=1 
+#SBATCH --ntasks-per-node=1 
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1000
+
+# SLURM wrapper that sets up an SSH/SOCKS proxy for outbound internet access
+# from the cluster, then runs download_snowfall.py to fetch the ERA5-Land
+# snowfall data.
+
+# initial setup
+module purge
+module load anaconda/5.0.0_py3
+source activate data_monitor
+
+# set HTTP Proxy
+ssh -D 1080 $SLURM_SUBMIT_HOST -N -f
+pproxy -l http://:8182 -r socks5://127.0.0.1:1080 --daemon
+export http_proxy=127.0.0.1:8182
+export https_proxy=127.0.0.1:8182
+
+python ./download_snowfall.py
